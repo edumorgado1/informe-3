@@ -1,0 +1,325 @@
+---
+title: "Untitled"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+### Librerias:
+
+Cargamos las librerias que se utilizarán en este proyecto.
+
+```{r}
+library(dplyr)
+#library (tidyverse)
+library (ggplot2)
+library(datasets)
+library(pROC)
+library(discrim)
+library(plyr)
+library(caret)
+library(tidymodels)
+```
+
+### Cargamos la data:
+```{r}
+data = readRDS(file.choose())
+summary(data)
+
+```
+En primera instancia observamos que existen 17 variables, dentro de las cuales concluimos que existen algunas variables que no nos entregan información valiosa para poder desarrollar este problema por lo que procedemos a eliminarlas. Estas variables son "athlete","id","start_date_local", "records","device_name","has_heartrate, . Estas variables entregan información que a nuestro parecer no tiene implicancia en la resolucíon del problema por lo que analizaremos las otras 10 restantes para resolver el problema que se nos plantea.
+Luego procedemos a eliminar los valora nulos dentro de la data.
+
+
+```{r}
+data1<- data[,!(colnames(data) %in% c("id","athlete","records","device_name","has_heartrate","start_date_local"))]
+```
+```{r}
+sapply(data1, function(x)sum(is.na(x)))
+data_limpia=na.omit(data1)
+```
+
+En el siguiente paso, procedemos a analizar la variable "type". Esta es la variable que nostros trataremos de predecir, la cual tiene valores 'Ride', 'Walk',"EBikeRide","Run","Hike". Para este problema dejaremos dos grandes grupos uno es el grupo de las actividades en bicicleta (Ride, EbikeRide) y las actividades a pie (walk, run, hike).
+```{r}
+table(data_limpia$type)
+```
+
+
+```{r}
+data_limpia$type <- mapvalues(data_limpia$type, from=c('Ride', 'Walk',"EBikeRide","Run","Hike"), to=c(1,0,1,0,0))
+str(data_limpia)
+```
+
+Podemos observar que las variables average_speed, max_speed, elev_high, elev_low estan descritas como caracter por lo que las transformamos a variables numéricas. Por otra parte la variable "type" la transformamos a tipo factor.
+```{r}
+data_limpia$average_speed= as.numeric(data_limpia$average_speed)
+data_limpia$max_speed= as.numeric(data_limpia$max_speed)
+data_limpia$elev_low= as.numeric(data_limpia$elev_low)
+data_limpia$elev_high= as.numeric(data_limpia$elev_high)
+data_limpia$type= as.factor(data_limpia$type)
+str(data_limpia)
+```
+### Análisis de Outliers:
+Ahora analizamos que existen valores "extraños" o muy espacados de los valores que se podrian decribir como normales, como por ejemplo un promedio de velocidad de 2.296 km/h, maxima cantidad de calorías gastadas de 326.157, etc. Por lo que procedemos a hacer el análisis de outliers que pueden ser descritos como errores de medición del dispositivo.
+
+```{r}
+boxplot(data_limpia$average_speed,horizontal = TRUE)
+boxplot(data_limpia$calories, horizontal =TRUE)
+boxplot(data_limpia$elev_low, horizontal =TRUE)
+boxplot(data_limpia$elev_high, horizontal =TRUE)
+boxplot(data_limpia$max_speed, horizontal =TRUE)
+boxplot(data_limpia$elapsed_time, horizontal =TRUE)
+boxplot(data_limpia$moving_time, horizontal =TRUE)
+boxplot(data_limpia$total_elevation_gain, horizontal =TRUE)
+boxplot(data_limpia$distance, horizontal =TRUE)
+
+
+
+```
+```{r}
+#boxplot.stats(data_limpia$calories)
+#boxplot.stats(data_limpia$distance)
+#boxplot.stats(data_limpia$elev_low)
+#boxplot.stats(data_limpia$elev_high)
+#boxplot.stats(data_limpia$max_speed)
+#boxplot.stats(data_limpia$moving_time)
+boxplot.stats(data_limpia$elapsed_time)
+#boxplot.stats(data_limpia$average_speed)
+#boxplot.stats(data_limpia$total_elevation_gain)
+```
+Una vez analisada nuestra data variable por variable procedemos a eliminar los valors "0" de nuestra data y los valores outliers que estan por sobre el cuarto cuartil
+
+```{r}
+data_limpia=filter(data_limpia, calories>0, calories<2300)
+data_limpia=filter(data_limpia, distance>0, distance <40000)
+data_limpia=filter(data_limpia, elev_low>0, elev_low<1370)
+data_limpia=filter(data_limpia, elev_high>0, elev_high<1975)
+data_limpia=filter(data_limpia, max_speed>0, max_speed<30)
+data_limpia=filter(data_limpia, moving_time>0,moving_time<10000)
+data_limpia=filter(data_limpia, elapsed_time>0, elapsed_time<11711)
+data_limpia=filter(data_limpia, average_speed>0,average_speed<9)
+data_limpia=filter(data_limpia, total_elevation_gain>0,total_elevation_gain<1000)
+
+```
+
+```{r}
+boxplot(data_limpia$average_speed,horizontal = TRUE)
+boxplot(data_limpia$calories, horizontal =TRUE)
+boxplot(data_limpia$elev_low, horizontal =TRUE)
+boxplot(data_limpia$elev_high, horizontal =TRUE)
+boxplot(data_limpia$max_speed, horizontal =TRUE)
+boxplot(data_limpia$elapsed_time, horizontal =TRUE)
+boxplot(data_limpia$moving_time, horizontal =TRUE)
+boxplot(data_limpia$total_elevation_gain, horizontal =TRUE)
+boxplot(data_limpia$distance, horizontal =TRUE)
+```
+Podemos observar que ahora los datos estan mas limpios y ya se puede empezar a trabajar en ellos.
+
+### Visualización de los datos:
+ 
+```{r}
+plot4 <- ggplot(data_limpia,aes(data_limpia$average_speed, data_limpia$max_speed, color=data_limpia$type)) + 
+  geom_point(size = 4) + 
+  scale_color_manual(values = c('#34495E','#F0FF00')) + 
+  theme(legend.position = "bottom") +
+  theme_classic() +
+  theme(text=element_text(size=10,  family="sans"))
+plot4
+
+plot5 <- ggplot(data_limpia,aes(data_limpia$total_elevation_gain, data_limpia$distance, color=data_limpia$type)) + 
+  geom_point(size = 4) + 
+  scale_color_manual(values = c('#34495E','#F0FF00')) + 
+  theme(legend.position = "bottom") +
+  theme_classic() +
+  theme(text=element_text(size=10,  family="sans"))
+plot5
+
+plot6 <- ggplot(data_limpia,aes(data_limpia$calories, data_limpia$distance, color=data_limpia$type)) + 
+  geom_point(size = 4) + 
+  scale_color_manual(values = c('#34495E','#F0FF00')) + 
+  theme(legend.position = "bottom") +
+  theme_classic() +
+  theme(text=element_text(size=10,  family="sans"))
+plot6
+```
+
+En la gráfica número 1, podemos observar que en la mayoría de los casos las actividades en bicicleta tienen una velocidad máxima mas alta y a la vez tienen un promedio de velocidad mas alto lo que tiene bastante lógica. Por otra parte se puede observar que en comparación a las actividades en bicicleta, las actividades a pie tienden a tener una velocidad máxima y un promedio de velocidad bajo (ambos a la vez).
+
+Por otra parte, en el segundo gráfico se puede concluir que las actividades en bicicleta son en la mayoría de los caso mas largas en distancia que las actividades a pie. Luego parece ser que la variable total_elvation en ambos tipos de actividades se distribuye parecida.
+
+Finalmente, en el tercer gráfico se puede observar que en ambas actividades a medida que aumenta la distancia recorrida, aumentan las calorias gastadas, lo que tiene bastante lógica en el hecho de que a mayor cantidad de tiempo de un cuerpo bajo trabajo físico, mayor será su gasto energético.
+
+### Creamos data de entrenamiento:
+
+En este paso creamos la data de entrenamiento y la data de prueba. Creamos una proporción del 60% de los datos para la data de entrenamiento y el 40% de los datos para la data de prueba. Por otra parte creamos una muestra aleatoria de los datos de 15.000 valores con el fin de trabajar con una menor cantidad de datos y que el modelo no se sobre cargue con tanta data. Finalmente dejamos las variables "total_elevation_gain","average_speed","elapsed_time", "moving_time", "max_speed", "elev_high","elev_low", "distance","calories", como variables predictoras y la variable "type" como la variable a predecir.
+
+```{r}
+daf=data_limpia[sample(nrow(data_limpia), 15000), ]
+set.seed(123)
+data_split=initial_split(daf, prop=0.6)
+
+train_data=training(data_split)
+test_data=testing(data_split)
+
+receta=recipe(type~.,data=train_data)
+receta
+
+
+```
+### Modelo Arbol de desición:
+
+Para poder resolver el problema que se nos plantea, utilizaremos el modelo de clasificación "Arboles de desición", el cual es un modelo de predicción utilizado en diversos ámbitos.Con este modelo, dado el conjunto de datos que se nos entrego, intentaremos predecir si un usuario hizo una actividad en bicicleta o a pie, a raíz de algunas variables como velocidad máxima, distancia recorrida, promedio de velocidad, etc.
+
+```{r}
+modelo= decision_tree(tree_depth =  5,min_n=10) %>%
+  set_engine("rpart") %>%set_mode("classification")
+modelo
+str(train_data)
+table(data_limpia$type)
+
+fit_mod <- function(mod){
+  
+  modelo_fit <- 
+  workflow() %>% 
+  add_model(mod) %>% 
+  add_recipe(receta) %>% 
+  fit(data = train_data)
+
+model_pred <- 
+  predict(modelo_fit, test_data, type = "prob") %>% 
+  bind_cols(test_data) 
+
+return(model_pred %>% 
+  roc_auc(truth= type, .pred_0))
+}
+
+fit_mod(modelo)
+```
+Podemos observar que el modelo nos arroja un valor AUC del 96%, esto quiere decir que el modelo es capaz de predecir un 96% de las veces de manera eficiente, clasificando si un deportista hizo una actividad a pie o en bicicleta.
+
+### Visualización de arbol de desición:
+```{r}
+library(rpart.plot)
+
+censo <- rpart(type~., data = train_data, method = "class")
+
+rpart.plot(censo)
+```
+En la visualización del arbol podemos observar que el modelo toma como la varible mas importante la velocidad máxima que alcanza el atleta, en la cual si esta velocidad es menor a 7 automáticamente se dice que la actividad que se realizó fue a pie. Por otra parte la segunda variable mas importante es promedio de velocidad, en la cual si el promedio es mayor a 3,6 automáticamente se dice que la actividad fue realizada en bicicleta.
+
+
+### Predicción:
+
+Luego procedemos a realizar algunas predicciones en la base de datos con nuestro modelo creado.
+
+
+```{r}
+pred_type <- predict(censo, newdata = test_data, type = "class")
+pred_type %>% as.data.frame() %>% head()
+```
+
+```{r}
+pred_type %>% as.data.frame() %>% tail()
+```
+
+### Probabilidad para curva ROC:
+
+En este caso predecimos a raíz de nuestr acurva ROC, la cual nos entrega el porcentaje de pertenencia de un dato a si fue una actividad en bicicleta (valor 1) o si fue a pie (valor 0).
+```{r}
+pred_type_roc <- predict(censo, newdata = test_data, type = "prob")
+pred_type_roc %>% as.data.frame() %>% head()
+```
+```{r}
+test_data$predictedtype <- pred_type
+```
+```{r}
+pred_type_roc <- predict(censo, newdata = test_data, type = "prob")
+pred_type_roc %>% as.data.frame() %>% head()
+```
+
+
+```{r}
+pred_type_roc <- pred_type_roc %>% as.data.frame()
+prob <- pred_type_roc$"0"
+
+```
+
+
+### Evaluación del modelo a traves de Curva ROC:
+
+Obtenemos una visualización de la curva ROC la cual es una representación gráfica de la sensibilidad frente a la especificidad para un sistema clasificador binario según se varía el umbral de discriminación. En este caso el valor AUC el cual representa el area bajo la curva ROC debe ser lo mas alto posible. En nuestro modelo podemos observar que se obtiene un valor AUC de 0.86 lo que es bastante bueno y nos confirma que nuestro modelo cumple con lo solicitado al momento de clasificar.
+```{r}
+ROC <- roc(test_data$type, prob)
+
+plot(ROC, col = "#fd634b", family = "sans", cex = 2, main = "CART Model ROC Curve 
+AUC = 0.8648")
+```
+
+
+### Matriz de confusión:
+
+La matriz de confusión es una herramienta que permite la visualización del desempeño de un algoritmo que se emplea en aprendizaje supervisado. Cada columna de la matriz representa el número de predicciones de cada clase, mientras que cada fila representa a las instancias en la clase real. Uno de los beneficios de las matrices de confusión es que facilitan ver si el sistema está confundiendo dos clases.
+
+```{r}
+cm <- confusionMatrix(table(test_data$type, test_data$predictedtype))
+test_data$predictedtype <- as.factor(test_data$predictedtype)
+
+table <- data.frame(confusionMatrix(test_data$type, test_data$predictedtype)$table)
+
+print(cm)
+```
+Gracias a nuestra matriz podemos observar que 2439 datos se clasificaron bien como actividades a pie, por otra parte 3214 datos se clasificaron bien como actividades en bicicleta. Finalmente se puede observar que 191 datos fueron clasificados como actividades a pie cuando eran actividades en bicicleta y 156 datos fueron clasificados como actividades en bicicleta cuando eran actividades a pie.
+
+### Chequeo de Overfitting - Train vs Test Accuracy:
+
+Esto se realiza para poder ver si estamos sobre prediciendo nuestro modelo. Procedemos a hacer una comparación entre la predicción de nuestra data de entrenamiento y nuestra data de test o prueba.
+
+
+```{r}
+is_predictedtype <- predict(censo,newdata=train_data,type='class')
+misClassError <- mean(is_predictedtype != train_data$type)
+print(paste('Train-set Accuracy =',1-misClassError))
+```
+```{r}
+misClassError <- mean(test_data$predictedtype != test_data$type)
+print(paste('Test-set Accuracy =',1-misClassError))
+```
+Al observar los valores AUC y el accuracy de nuestro modelo, podemos concluir que nuestro modelo hizo un buen trabajo de predicción, a que el Accuracy de nuestra data de test y de entrenamiento es muy parecido, lo que indica que nuestro modelo no se superó.
+
+### Comparación con Modelo SVM:
+
+El paso que haemos ahora será comparar nuestro modelo "Arbol de desición, con el modelo "SVM". Este método está propiamente relacionado con problemas de clasificación y regresión. Dado un conjunto de ejemplos de entrenamiento (de muestras) podemos etiquetar las clases y entrenar una SVM para construir un modelo que prediga la clase de una nueva muestra. En este caso que prediga si un atleta hizo una actividad caminando o en bicicleta. 
+
+Procedemos a crear el modelo:
+```{r}
+modelo_svm <- svm_poly(degree = 2) %>% 
+  set_engine("kernlab") %>% 
+  set_mode("classification") %>% 
+  translate()
+modelo_svm
+```
+Luego procedemos a ajustar el modelo y obtener como resultado el porcentaje de aciertos a traves del valor AUC.
+
+```{r}
+fit_mod <- function(mod){
+  
+  modelo_fit <- 
+  workflow() %>% 
+  add_model(mod) %>% 
+  add_recipe(receta) %>% 
+  fit(data = train_data)
+model_pred <- 
+  predict(modelo_fit, test_data, type = "prob") %>% 
+  bind_cols(test_data) 
+return(model_pred %>% 
+  roc_auc(truth = type, .pred_0))
+}
+fit_mod(modelo_svm)
+```
+Se puede observar que este modelo presenta un valor AUC bastante alto, esto quiere decir que el modelo predice de manera eficiente en el 99% de los casos. Es 3% mayor a nuestro modelo "Arbol de desición", el cual tiene un nivel de aciertos del 96%. Ambos son valores bastante buenos por lo que nos quedamos con el modelo propuesto por el arbol de desición, ya que es el modelo con el cual hemos trabajado durante todo el informe.
+
+
