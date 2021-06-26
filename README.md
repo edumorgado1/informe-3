@@ -1,4 +1,4 @@
-Untitled
+Informe 3
 ================
 
 ### Librerias:
@@ -1781,16 +1781,16 @@ str(train_data)
 ```
 
     ## 'data.frame':    9000 obs. of  10 variables:
-    ##  $ type                : Factor w/ 2 levels "0","1": 2 2 2 2 2 2 2 2 1 2 ...
-    ##  $ calories            : num  604 212 115 1157 1112 ...
-    ##  $ distance            : num  13834 5770 5095 25832 24414 ...
-    ##  $ elev_low            : num  32 23.6 95.7 793.8 608 ...
-    ##  $ elev_high           : num  276 144 130 1382 808 ...
-    ##  $ max_speed           : num  12.2 14.4 13.4 14.8 13.2 ...
-    ##  $ moving_time         : num  4992 1984 660 6096 6620 ...
-    ##  $ elapsed_time        : num  9001 2096 660 6718 7595 ...
-    ##  $ average_speed       : num  2.77 2.91 7.72 4.24 3.69 ...
-    ##  $ total_elevation_gain: num  466.7 272 11.7 921 722 ...
+    ##  $ type                : Factor w/ 2 levels "0","1": 2 2 1 1 2 1 1 2 1 2 ...
+    ##  $ calories            : num  175 30.7 937 769 150 ...
+    ##  $ distance            : num  7641 3519 12136 12526 3929 ...
+    ##  $ elev_low            : num  605 253 604 439 516 ...
+    ##  $ elev_high           : num  697 716 658 891 618 ...
+    ##  $ max_speed           : num  10.3 13.8 5.6 4.7 12.1 6.3 4.8 15.6 5.1 7.1 ...
+    ##  $ moving_time         : num  1121 516 3750 5053 855 ...
+    ##  $ elapsed_time        : num  1121 599 3804 5330 872 ...
+    ##  $ average_speed       : num  6.82 6.82 3.24 2.48 4.59 ...
+    ##  $ total_elevation_gain: num  2 9 51 586 107 58 19.7 591 784 93 ...
     ##  - attr(*, "na.action")= 'omit' Named int [1:13519] 31 32 43 44 111 112 113 149 150 196 ...
     ##   ..- attr(*, "names")= chr [1:13519] "31" "32" "43" "44" ...
 
@@ -1825,7 +1825,7 @@ fit_mod(modelo)
     ## # A tibble: 1 x 3
     ##   .metric .estimator .estimate
     ##   <chr>   <chr>          <dbl>
-    ## 1 roc_auc binary         0.959
+    ## 1 roc_auc binary         0.954
 
 Podemos observar que el modelo nos arroja un valor AUC del 96%, esto
 quiere decir que el modelo es capaz de predecir un 96% de las veces de
@@ -1877,24 +1877,24 @@ pred_type %>% as.data.frame() %>% head()
 ```
 
     ##       .
-    ## 67087 0
-    ## 20190 0
-    ## 82591 0
-    ## 36024 1
-    ## 29125 1
-    ## 53205 0
+    ## 86176 0
+    ## 12612 0
+    ## 61182 1
+    ## 74044 0
+    ## 61113 1
+    ## 36992 1
 
 ``` r
 pred_type %>% as.data.frame() %>% tail()
 ```
 
     ##       .
-    ## 78941 0
-    ## 2287  0
-    ## 4400  0
-    ## 33907 1
-    ## 60118 1
-    ## 29880 1
+    ## 45399 0
+    ## 18370 0
+    ## 1227  1
+    ## 82175 0
+    ## 2958  1
+    ## 33853 1
 
 ### Probabilidad para curva ROC:
 
@@ -1907,13 +1907,13 @@ pred_type_roc <- predict(censo, newdata = test_data, type = "prob")
 pred_type_roc %>% as.data.frame() %>% head()
 ```
 
-    ##                0         1
-    ## 67087 0.92751280 0.0724872
-    ## 20190 0.92751280 0.0724872
-    ## 82591 0.92751280 0.0724872
-    ## 36024 0.08339124 0.9166088
-    ## 29125 0.01499559 0.9850044
-    ## 53205 0.92751280 0.0724872
+    ##                0          1
+    ## 86176 0.93428494 0.06571506
+    ## 12612 0.93428494 0.06571506
+    ## 61182 0.01139864 0.98860136
+    ## 74044 0.93428494 0.06571506
+    ## 61113 0.07658506 0.92341494
+    ## 36992 0.01139864 0.98860136
 
 ``` r
 test_data$predictedtype <- pred_type
@@ -1924,13 +1924,13 @@ pred_type_roc <- predict(censo, newdata = test_data, type = "prob")
 pred_type_roc %>% as.data.frame() %>% head()
 ```
 
-    ##                0         1
-    ## 67087 0.92751280 0.0724872
-    ## 20190 0.92751280 0.0724872
-    ## 82591 0.92751280 0.0724872
-    ## 36024 0.08339124 0.9166088
-    ## 29125 0.01499559 0.9850044
-    ## 53205 0.92751280 0.0724872
+    ##                0          1
+    ## 86176 0.93428494 0.06571506
+    ## 12612 0.93428494 0.06571506
+    ## 61182 0.01139864 0.98860136
+    ## 74044 0.93428494 0.06571506
+    ## 61113 0.07658506 0.92341494
+    ## 36992 0.01139864 0.98860136
 
 ``` r
 pred_type_roc <- pred_type_roc %>% as.data.frame()
@@ -1985,28 +1985,28 @@ print(cm)
     ## 
     ##    
     ##        0    1
-    ##   0 2515  146
-    ##   1  199 3140
-    ##                                           
-    ##                Accuracy : 0.9425          
-    ##                  95% CI : (0.9363, 0.9483)
-    ##     No Information Rate : 0.5477          
-    ##     P-Value [Acc > NIR] : < 2.2e-16       
-    ##                                           
-    ##                   Kappa : 0.8837          
-    ##                                           
-    ##  Mcnemar's Test P-Value : 0.005117        
-    ##                                           
-    ##             Sensitivity : 0.9267          
-    ##             Specificity : 0.9556          
-    ##          Pos Pred Value : 0.9451          
-    ##          Neg Pred Value : 0.9404          
-    ##              Prevalence : 0.4523          
-    ##          Detection Rate : 0.4192          
-    ##    Detection Prevalence : 0.4435          
-    ##       Balanced Accuracy : 0.9411          
-    ##                                           
-    ##        'Positive' Class : 0               
+    ##   0 2496  129
+    ##   1  249 3126
+    ##                                          
+    ##                Accuracy : 0.937          
+    ##                  95% CI : (0.9306, 0.943)
+    ##     No Information Rate : 0.5425         
+    ##     P-Value [Acc > NIR] : < 2.2e-16      
+    ##                                          
+    ##                   Kappa : 0.8726         
+    ##                                          
+    ##  Mcnemar's Test P-Value : 9.317e-10      
+    ##                                          
+    ##             Sensitivity : 0.9093         
+    ##             Specificity : 0.9604         
+    ##          Pos Pred Value : 0.9509         
+    ##          Neg Pred Value : 0.9262         
+    ##              Prevalence : 0.4575         
+    ##          Detection Rate : 0.4160         
+    ##    Detection Prevalence : 0.4375         
+    ##       Balanced Accuracy : 0.9348         
+    ##                                          
+    ##        'Positive' Class : 0              
     ## 
 
 Gracias a nuestra matriz podemos observar que 2439 datos se clasificaron
@@ -2028,14 +2028,14 @@ misClassError <- mean(is_predictedtype != train_data$type)
 print(paste('Train-set Accuracy =',1-misClassError))
 ```
 
-    ## [1] "Train-set Accuracy = 0.942333333333333"
+    ## [1] "Train-set Accuracy = 0.945777777777778"
 
 ``` r
 misClassError <- mean(test_data$predictedtype != test_data$type)
 print(paste('Test-set Accuracy =',1-misClassError))
 ```
 
-    ## [1] "Test-set Accuracy = 0.9425"
+    ## [1] "Test-set Accuracy = 0.937"
 
 Al observar los valores AUC y el accuracy de nuestro modelo, podemos
 concluir que nuestro modelo hizo un buen trabajo de predicción, a que el
@@ -2096,7 +2096,7 @@ fit_mod(modelo_svm)
     ## # A tibble: 1 x 3
     ##   .metric .estimator .estimate
     ##   <chr>   <chr>          <dbl>
-    ## 1 roc_auc binary         0.995
+    ## 1 roc_auc binary         0.994
 
 Se puede observar que este modelo presenta un valor AUC bastante alto,
 esto quiere decir que el modelo predice de manera eficiente en el 99% de
